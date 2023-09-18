@@ -1,4 +1,4 @@
-#![feature(rustc_private)]
+#![feature(rustc_private, extend_one)]
 #![deny(rust_2018_idioms)]
 #![warn(unreachable_pub)]
 #![recursion_limit = "256"]
@@ -11,6 +11,7 @@ extern crate lazy_static;
 extern crate tracing;
 
 // N.B. these crates are loaded from the sysroot, so they need extern crate.
+extern crate proc_macro;
 extern crate rustc_ast;
 extern crate rustc_ast_pretty;
 extern crate rustc_builtin_macros;
@@ -74,6 +75,7 @@ pub(crate) mod formatting;
 mod ignore_path;
 mod imports;
 mod items;
+mod leptos;
 mod lists;
 mod macros;
 mod matches;

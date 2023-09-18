@@ -45,9 +45,13 @@ getopts = "0.2"
 ignore = "0.4"
 itertools = "0.11"
 lazy_static = "1.4"
+proc-macro2 = { version = "1.0", features = ["span-locations"] }
+quote = "1.0"
 regex = "1.7"
+rstml = "0.10"
 serde = { version = "1.0.160", features = ["derive"] }
 serde_json = "1.0"
+syn = "2.0"
 term = "0.7"
 thiserror = "1.0.40"
 toml = "0.7.4"
@@ -55,7 +59,9 @@ tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 unicode-segmentation = "1.9"
 unicode-width = "0.1"
-unicode-properties = { version = "0.1", default-features = false, features = ["general-category"] }
+unicode-properties = { version = "0.1", default-features = false, features = [
+  "general-category",
+] }
 
 rustfmt-config_proc_macro = { version = "0.3", path = "config_proc_macro" }
 

@@ -27,6 +27,7 @@ use crate::comment::{
 use crate::config::lists::*;
 use crate::config::Version;
 use crate::expr::{rewrite_array, rewrite_assign_rhs, RhsAssignKind};
+use crate::leptos::node::format_leptos_view;
 use crate::lists::{itemize_list, write_list, ListFormatting};
 use crate::overflow;
 use crate::parse::macros::lazy_static::parse_lazy_static;
@@ -227,7 +228,11 @@ fn rewrite_macro_inner(
         };
     }
     // Format well-known macros which cannot be parsed as a valid AST.
-    if macro_name == "lazy_static!" && !has_comment {
+    if macro_name == "view!" {
+        if let success @ Some(_) = format_leptos_view(context, shape, mac) {
+            return success;
+        }
+    } else if macro_name == "lazy_static!" && !has_comment {
         if let success @ Some(..) = format_lazy_static(context, shape, ts.clone()) {
             return success;
         }
