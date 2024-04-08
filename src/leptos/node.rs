@@ -33,8 +33,6 @@ pub(crate) fn format_leptos_view(
 
     if let Some(nodes) = Children::from_iter(&nodes, context, ts, offset) {
         let children = rewrite_children(context, nested_shape, &nodes)?;
-        // "view! { " + children + " }"
-        let do_break = children.len() + 10 > shape.width || children.contains('\n');
 
         let mut result = combine_strs_with_missing_comments(
             context,
@@ -42,7 +40,7 @@ pub(crate) fn format_leptos_view(
             &children,
             mac.args.dspan.open.between(span),
             nested_shape,
-            !do_break,
+            false,
         )
         .unwrap_or_default();
 
@@ -52,9 +50,17 @@ pub(crate) fn format_leptos_view(
             "}",
             span.between(mac.args.dspan.close),
             shape,
-            !do_break,
+            false,
         )
         .unwrap_or_default();
+
+        if result.lines().count() <= 3 {
+            let single_line = format!("view! {{ {children} }}");
+            // 1 is subtracted from width in `crate::visitor::FmtVisitor::visit_mac'
+            if single_line.len() - 1 <= shape.width {
+                return Some(single_line);
+            }
+        }
 
         Some(result)
     } else {
@@ -130,67 +136,48 @@ pub(crate) fn rewrite_element(
     }
 
     let closing_tag = rewrite_closing_tag(element);
-    let shape = shape.saturating_sub_width(
-        if opening_tag.contains('\n') {
-            // '>' token
-            1
-        } else {
-            opening_tag.len()
-        } + closing_tag.len(),
-    );
 
     let nested_shape = shape
         .block_indent(context.config.tab_spaces())
         .with_max_width(context.config);
 
-    if let Some(children) = &element.children {
-        let new_children = rewrite_children(context, nested_shape, children)?;
+    let Some(children) = &element.children else {
+        return Some(format!("{opening_tag}{closing_tag}"));
+    };
+    let new_children = rewrite_children(context, nested_shape, children)?;
 
-        let span_pre = element.open_tag.span().between(children.span());
-        let missing_comment_pre = rewrite_missing_comment(span_pre, shape, context)?;
-        let span_post = children.span().between(
+    let mut result = combine_strs_with_missing_comments(
+        context,
+        &opening_tag,
+        &new_children,
+        element.open_tag.span().between(children.span()),
+        nested_shape,
+        false,
+    )?;
+
+    result = combine_strs_with_missing_comments(
+        context,
+        &result,
+        &closing_tag,
+        children.span().between(
             element
                 .close_tag
                 .as_ref()
                 .map(|x| x.span())
                 .unwrap_or_else(|| children.span()),
-        );
-        let missing_comment_post = rewrite_missing_comment(span_post, shape, context)?;
-        if !missing_comment_pre.is_empty()
-            || !missing_comment_post.is_empty()
-            || opening_tag.len() + new_children.len() + closing_tag.len() > shape.width
-        {
-            let mut result = combine_strs_with_missing_comments(
-                context,
-                &opening_tag,
-                &new_children,
-                element.open_tag.span().between(children.span()),
-                nested_shape,
-                false,
-            )?;
+        ),
+        shape,
+        false,
+    )?;
 
-            result = combine_strs_with_missing_comments(
-                context,
-                &result,
-                &closing_tag,
-                children.span().between(
-                    element
-                        .close_tag
-                        .as_ref()
-                        .map(|x| x.span())
-                        .unwrap_or_else(|| children.span()),
-                ),
-                shape,
-                false,
-            )?;
-
-            Some(result)
-        } else {
-            Some(format!("{opening_tag}{new_children}{closing_tag}"))
+    if result.lines().count() <= 3 {
+        let single_line = format!("{opening_tag}{new_children}{closing_tag}");
+        if single_line.len() <= shape.width {
+            return Some(single_line);
         }
-    } else {
-        Some(format!("{opening_tag}{closing_tag}"))
     }
+
+    Some(result)
 }
 
 pub(crate) fn rewrite_block(

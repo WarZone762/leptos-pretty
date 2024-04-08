@@ -1,9 +1,9 @@
 [package]
 
-name = "rustfmt-nightly"
-version = "1.7.0"
+name = "leptos-pretty"
+version = "1.0.0"
 description = "Tool to find and fix Rust formatting issues"
-repository = "https://github.com/rust-lang/rustfmt"
+repository = "https://github.com/WarZone762/leptos-pretty"
 readme = "README.md"
 license = "Apache-2.0 OR MIT"
 build = "build.rs"
@@ -11,20 +11,16 @@ categories = ["development-tools"]
 edition = "2021"
 
 [[bin]]
-name = "rustfmt"
+name = "leptos-pretty-format"
 path = "src/bin/main.rs"
 
 [[bin]]
-name = "cargo-fmt"
+name = "leptos-pretty"
+path = "src/bin-wrapper/main.rs"
+
+[[bin]]
+name = "cargo-leptos-pretty"
 path = "src/cargo-fmt/main.rs"
-
-[[bin]]
-name = "rustfmt-format-diff"
-path = "src/format-diff/main.rs"
-
-[[bin]]
-name = "git-rustfmt"
-path = "src/git-rustfmt/main.rs"
 
 [features]
 default = ["cargo-fmt", "rustfmt-format-diff"]

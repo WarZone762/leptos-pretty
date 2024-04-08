@@ -8,7 +8,7 @@ use std::process::Command;
 use std::str::FromStr;
 
 use getopts::{Matches, Options};
-use rustfmt_nightly as rustfmt;
+use leptos_pretty as rustfmt;
 use tracing_subscriber::EnvFilter;
 
 use crate::rustfmt::{load_config, CliOptions, FormatReportFormatterBuilder, Input, Session};

@@ -5,7 +5,7 @@ use anyhow::{format_err, Result};
 use io::Error as IoError;
 use thiserror::Error;
 
-use rustfmt_nightly as rustfmt;
+use leptos_pretty as rustfmt;
 use tracing_subscriber::EnvFilter;
 
 use std::collections::HashMap;
@@ -22,7 +22,7 @@ use crate::rustfmt::{
     FormatReportFormatterBuilder, Input, Session, Verbosity,
 };
 
-const BUG_REPORT_URL: &str = "https://github.com/rust-lang/rustfmt/issues/new?labels=bug";
+const BUG_REPORT_URL: &str = "https://github.com/WarZone762/leptos-pretty/issues/new?labels=bug";
 
 // N.B. these crates are loaded from the sysroot, so they need extern crate.
 extern crate rustc_driver;
@@ -400,7 +400,7 @@ fn print_usage_to_stdout(opts: &Options, reason: &str) {
     } else {
         format!("{reason}\n\n")
     };
-    let msg = format!("{sep}Format Rust code\n\nusage: rustfmt [options] <file>...");
+    let msg = format!("{sep}Format Rust code\n\nusage: leptos-pretty [options] <file>...");
     println!("{}", opts.usage(&msg));
 }
 
@@ -414,7 +414,7 @@ are 1-based and inclusive of both end points. Specifying an empty array
 will result in no files being formatted. For example,
 
 ```
-rustfmt src/lib.rs src/foo.rs --file-lines '[
+leptos-pretty src/lib.rs src/foo.rs --file-lines '[
     {{\"file\":\"src/lib.rs\",\"range\":[7,13]}},
     {{\"file\":\"src/lib.rs\",\"range\":[21,29]}},
     {{\"file\":\"src/foo.rs\",\"range\":[10,11]}},
@@ -434,7 +434,7 @@ fn print_version() {
         include_str!(concat!(env!("OUT_DIR"), "/commit-info.txt"))
     );
 
-    println!("rustfmt {version_info}");
+    println!("leptos-pretty {version_info}");
 }
 
 fn determine_operation(matches: &Matches) -> Result<Operation, OperationError> {

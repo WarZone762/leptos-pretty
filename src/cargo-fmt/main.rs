@@ -24,9 +24,9 @@ mod cargo_fmt_tests;
 #[derive(Parser)]
 #[command(
     disable_version_flag = true,
-    bin_name = "cargo fmt",
+    bin_name = "cargo leptos-pretty",
     about = "This utility formats all bin and lib files of \
-             the current crate using rustfmt."
+             the current crate using leptos-pretty."
 )]
 #[command(styles = clap_cargo::style::CLAP_STYLING)]
 pub struct Opts {
@@ -38,7 +38,7 @@ pub struct Opts {
     #[arg(short = 'v', long = "verbose")]
     verbose: bool,
 
-    /// Print rustfmt version and exit
+    /// Print leptos-pretty version and exit
     #[arg(long = "version")]
     version: bool,
 
@@ -83,14 +83,14 @@ const SUCCESS: i32 = 0;
 const FAILURE: i32 = 1;
 
 fn execute() -> i32 {
-    // Drop extra `fmt` argument provided by `cargo`.
-    let mut found_fmt = false;
+    // Drop extra `leptos-pretty` argument provided by `cargo`.
+    let mut found_leptos_pretty = false;
     let args = env::args().filter(|x| {
-        if found_fmt {
+        if found_leptos_pretty {
             true
         } else {
-            found_fmt = x == "fmt";
-            x != "fmt"
+            found_leptos_pretty = x == "leptos-pretty";
+            x != "leptos-pretty"
         }
     });
 
@@ -238,7 +238,7 @@ fn get_rustfmt_info(args: &[String]) -> Result<i32, io::Error> {
         .map_err(|e| match e.kind() {
             io::ErrorKind::NotFound => io::Error::new(
                 io::ErrorKind::Other,
-                "Could not run rustfmt, please make sure it is in your PATH.",
+                "Could not run leptos-pretty, please make sure it is in your PATH.",
             ),
             _ => e,
         })?;
@@ -512,7 +512,7 @@ fn run_rustfmt(
             .map_err(|e| match e.kind() {
                 io::ErrorKind::NotFound => io::Error::new(
                     io::ErrorKind::Other,
-                    "Could not run rustfmt, please make sure it is in your PATH.",
+                    "Could not run leptos-pretty, please make sure it is in your PATH.",
                 ),
                 _ => e,
             })?;
