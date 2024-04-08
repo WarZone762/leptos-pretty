@@ -1,3 +1,48 @@
+# leptos-pretty
+
+This is a modified version of [rustfmt](https://github.com/rust-lang/rustfmt) that includes support
+for formatting [Leptos](https://github.com/leptos-rs/leptos) `view!` macros.
+
+## Installation
+
+***Important note:*** because rustfmt uses compiler libraries, it must be installed (and ran)
+with the exact nightly toolchain specified in `rust-toolchain`. Install it with `rustup`:
+
+```sh
+rustup toolchain install nightly-2023-12-28 --profile minimal --component llvm-tools rustc-dev
+```
+
+Then simply:
+
+```sh
+cargo +nightly-2023-12-28 install --git https://github.com/WarZone762/leptos-pretty leptos-pretty
+```
+
+When runnig `leptos-pretty`, the required toolchain will be selected automatically, provided it is
+installed.
+
+If you have any problems with installation, make sure to open an
+[issue](https://github.com/WarZone762/leptos-pretty/issues/new?label=install).
+
+## Usage
+
+Requires `rustup` and the correct toolchain to be installed.
+Otherwise, behaves exactly the same as [rustfmt](https://github.com/rust-lang/rustfmt), except with
+`leptos-pretty` instead of `rustfmt`, and `cargo leptos-pretty` instead of `cargo fmt`:
+
+```sh
+cargo leptos-pretty
+```
+
+## Credits
+
+This project was inspired by [leptosfmt](https://github.com/bram209/leptosfmt) by bram209, some of
+the formatting code was adapted from that project.
+
+rustfmt by The Rust Project Developers.
+
+# Original [rustfmt](https://github.com/rust-lang/rustfmt) README
+
 # rustfmt [![linux](https://github.com/rust-lang/rustfmt/actions/workflows/linux.yml/badge.svg?event=push)](https://github.com/rust-lang/rustfmt/actions/workflows/linux.yml) [![mac](https://github.com/rust-lang/rustfmt/actions/workflows/mac.yml/badge.svg?event=push)](https://github.com/rust-lang/rustfmt/actions/workflows/mac.yml) [![windows](https://github.com/rust-lang/rustfmt/actions/workflows/windows.yml/badge.svg?event=push)](https://github.com/rust-lang/rustfmt/actions/workflows/windows.yml) [![crates.io](https://img.shields.io/crates/v/rustfmt-nightly.svg)](https://crates.io/crates/rustfmt-nightly)
 
 A tool for formatting Rust code according to style guidelines.
@@ -85,7 +130,7 @@ The easiest way to run rustfmt against a project is with `cargo fmt`. `cargo fmt
 single-crate projects and [cargo workspaces](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html).
 Please see `cargo fmt --help` for usage information.
 
-You can specify the path to your own `rustfmt` binary for cargo to use by setting the`RUSTFMT` 
+You can specify the path to your own `rustfmt` binary for cargo to use by setting the`RUSTFMT`
 environment variable. This was added in v1.4.22, so you must have this version or newer to leverage this feature (`cargo fmt --version`)
 
 ### Running `rustfmt` directly

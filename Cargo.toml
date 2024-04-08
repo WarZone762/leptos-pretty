@@ -2,7 +2,7 @@
 
 name = "leptos-pretty"
 version = "1.0.0"
-description = "Tool to find and fix Rust formatting issues"
+description = "Tool to find and fix Leptos view! macro formatting issues"
 repository = "https://github.com/WarZone762/leptos-pretty"
 readme = "README.md"
 license = "Apache-2.0 OR MIT"

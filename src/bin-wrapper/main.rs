@@ -3,7 +3,7 @@
 
 use std::{env, io::Write, process::Command};
 
-const TOOLCHAIN: &str = env!("RUSTUP_TOOLCHAIN");
+const TOOLCHAIN: &str = "nightly-2023-12-28";
 
 fn main() {
     let toolchains = &Command::new("rustup")
