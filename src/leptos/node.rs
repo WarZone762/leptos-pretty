@@ -1,6 +1,6 @@
 use crate::{
-    comment::combine_strs_with_missing_comments,
-    leptos::convert::{Node, NodeAttributeWithTokens, _Span},
+    comment::{combine_strs_with_missing_comments, rewrite_missing_comment},
+    leptos::convert::{Node, NodeAttribute, Span},
     rewrite::{Rewrite, RewriteContext},
     shape::Shape,
 };
@@ -25,16 +25,16 @@ pub(crate) fn format_leptos_view(
 
     let tokens = view.parse::<proc_macro2::TokenStream>().ok()?;
     let nodes = rstml::parse2(tokens.clone()).ok()?;
-    let first = _Span::from(tokens.into_iter().next()?.span());
+    let first = Span::from(tokens.into_iter().next()?.span());
 
     // proc_macro2 parses everything in a fake file, so spans' offsets are always growing,
     // but we need the offset from the beginning of the macro
     let offset = span.lo().to_u32() as isize - first.lo() as isize;
 
     if let Some(nodes) = Children::from_iter(&nodes, context, ts, offset) {
-        let children = rewrite_children(context, nested_shape, &nodes, 0)?;
-        // "view { " + children + " }"
-        let do_break = children.len() + 9 > shape.width || children.contains('\n');
+        let children = rewrite_children(context, nested_shape, &nodes)?;
+        // "view! { " + children + " }"
+        let do_break = children.len() + 10 > shape.width || children.contains('\n');
 
         let mut result = combine_strs_with_missing_comments(
             context,
@@ -66,7 +66,6 @@ pub(crate) fn rewrite_children(
     context: &RewriteContext<'_>,
     shape: Shape,
     children: &Children<'_>,
-    attribute_count: usize,
 ) -> Option<String> {
     let mut result = String::new();
 
@@ -76,36 +75,9 @@ pub(crate) fn rewrite_children(
         .map(|x| rewrite_node(context, shape, x))
         .collect::<Option<Vec<_>>>()?;
 
-    // let mut iter = children.windows(2);
-    // while let Some([child, next]) = iter.next() {
-    //     println!(
-    //         "{}",
-    // rewrite_missing_comment(child.span().between(next.span()), shape, context)?
-    // combine_strs_with_missing_comments(
-    //     context,
-    //     &rewrite_node(context, shape, child)?,
-    //     &rewrite_node(context, shape, next)?,
-    //     child.span().between(next.span()),
-    //     shape,
-    //     false
-    // )?
-    //     );
-    // }
-
     let children_width =
         new_children.iter().fold(0, |acc, e| acc + e.len()) + new_children.len() - 1;
     let over_width = children_width > shape.width;
-
-    // let is_textual = children
-    //     .first()
-    //     .map(|n| matches!(n, Node::Text(_) | Node::RawText(_) | Node::Block(_)))
-    //     .unwrap_or_default();
-    //
-    // let soft_break = is_textual && attribute_count <= 1;
-    //
-    // if !soft_break || over_width {
-    //     result.push_str(&shape.indent.to_string_with_newline(context.config));
-    // }
 
     let sep = if over_width {
         shape.indent.to_string_with_newline(context.config)
@@ -113,15 +85,6 @@ pub(crate) fn rewrite_children(
         " ".into()
     };
     result.push_str(&new_children.join(&sep));
-
-    // if !soft_break || over_width {
-    //     result.push_str(
-    //         &shape
-    //             .indent
-    //             .block_unindent(context.config)
-    //             .to_string_with_newline(context.config),
-    //     );
-    // }
 
     Some(result)
 }
@@ -139,7 +102,7 @@ pub(crate) fn rewrite_node(
             "<!DOCTYPE {}>",
             x.doctype.value.to_token_stream_string()
         )),
-        Node::Fragment(x) => result.push_str(&rewrite_fragment(context, shape, x)),
+        Node::Fragment(x) => result.push_str(&rewrite_fragment(context, shape, x)?),
         Node::Element(x) => result.push_str(&rewrite_element(context, shape, x)?),
         Node::Block(x) => result.push_str(&rewrite_block(context, shape, x)?),
         Node::Text(x) => {
@@ -180,46 +143,51 @@ pub(crate) fn rewrite_element(
         .block_indent(context.config.tab_spaces())
         .with_max_width(context.config);
 
-    // if let Some(first) = element.children.first() {
-    //     result.push_str(
-    //         &rewrite_missing_comment(
-    //             ts_span(&element.open_tag.tokens)?.between(first.span()),
-    //             shape,
-    //             context,
-    //         )
-    //         .unwrap_or_default(),
-    //     );
-    // }
-
     if let Some(children) = &element.children {
-        let new_children =
-            rewrite_children(context, nested_shape, children, element.attributes.len())?;
+        let new_children = rewrite_children(context, nested_shape, children)?;
 
-        let mut result = combine_strs_with_missing_comments(
-            context,
-            &opening_tag,
-            &new_children,
-            element.open_tag.span().between(children.span()),
-            nested_shape,
-            false,
-        )?;
+        let span_pre = element.open_tag.span().between(children.span());
+        let missing_comment_pre = rewrite_missing_comment(span_pre, shape, context)?;
+        let span_post = children.span().between(
+            element
+                .close_tag
+                .as_ref()
+                .map(|x| x.span())
+                .unwrap_or_else(|| children.span()),
+        );
+        let missing_comment_post = rewrite_missing_comment(span_post, shape, context)?;
+        if !missing_comment_pre.is_empty()
+            || !missing_comment_post.is_empty()
+            || opening_tag.len() + new_children.len() + closing_tag.len() > shape.width
+        {
+            let mut result = combine_strs_with_missing_comments(
+                context,
+                &opening_tag,
+                &new_children,
+                element.open_tag.span().between(children.span()),
+                nested_shape,
+                false,
+            )?;
 
-        result = combine_strs_with_missing_comments(
-            context,
-            &result,
-            &closing_tag,
-            children.span().between(
-                element
-                    .close_tag
-                    .as_ref()
-                    .map(|x| x.span())
-                    .unwrap_or_else(|| children.span()),
-            ),
-            shape,
-            false,
-        )?;
+            result = combine_strs_with_missing_comments(
+                context,
+                &result,
+                &closing_tag,
+                children.span().between(
+                    element
+                        .close_tag
+                        .as_ref()
+                        .map(|x| x.span())
+                        .unwrap_or_else(|| children.span()),
+                ),
+                shape,
+                false,
+            )?;
 
-        Some(result)
+            Some(result)
+        } else {
+            Some(format!("{opening_tag}{new_children}{closing_tag}"))
+        }
     } else {
         Some(format!("{opening_tag}{closing_tag}"))
     }
@@ -249,22 +217,22 @@ pub(crate) fn rewrite_fragment(
     shape: Shape,
     frag: &NodeFragment<'_>,
 ) -> Option<String> {
-    let mut result = String::new();
+    let mut result: String;
 
-    if let Some(children) = x.children.as_ref() {
+    if let Some(children) = frag.children.as_ref() {
         let nested_shape = shape
             .saturating_sub_width(5)
             .block_indent(context.config.tab_spaces())
             .with_max_width(context.config);
 
-        let new_children = rewrite_children(context, nested_shape, children, 0)?;
+        let new_children = rewrite_children(context, nested_shape, children)?;
 
         let add_opening_frag = |shape| {
             combine_strs_with_missing_comments(
                 context,
                 "<>",
                 &new_children,
-                x.open_fragment.span().between(children.span()),
+                frag.open_fragment.span().between(children.span()),
                 shape,
                 false,
             )
@@ -278,23 +246,27 @@ pub(crate) fn rewrite_fragment(
                 context,
                 &result,
                 "</>",
-                children.span().between(x.close_fragment.as_ref()?.span()),
+                children
+                    .span()
+                    .between(frag.close_fragment.as_ref()?.span()),
                 shape,
                 false,
             )
         };
         result = add_closing_frag(shape).or_else(|| add_closing_frag(shape.infinite_width()))?;
+        Some(result)
     } else {
         result = combine_strs_with_missing_comments(
             context,
             "<>",
             "</>",
-            x.open_fragment
+            frag.open_fragment
                 .span()
-                .between(x.close_fragment.as_ref()?.span()),
+                .between(frag.close_fragment.as_ref()?.span()),
             shape,
             false,
         )?;
+        Some(result)
     }
 }
 
@@ -328,7 +300,7 @@ pub(crate) fn rewrite_closing_tag(element: &NodeElement<'_>) -> String {
 pub(crate) fn rewrite_attributes(
     context: &RewriteContext<'_>,
     shape: Shape,
-    attributes: &[NodeAttributeWithTokens<'_>],
+    attributes: &[NodeAttribute<'_>],
 ) -> Option<String> {
     let mut result = String::new();
 
@@ -369,11 +341,11 @@ pub(crate) fn rewrite_attributes(
 pub(crate) fn rewrite_attribute(
     context: &RewriteContext<'_>,
     shape: Shape,
-    attr: &NodeAttributeWithTokens<'_>,
+    attr: &NodeAttribute<'_>,
 ) -> Option<String> {
     match attr {
-        NodeAttributeWithTokens::Block(x) => rewrite_block(context, shape, x),
-        NodeAttributeWithTokens::Attribute(x) => {
+        NodeAttribute::Block(x) => rewrite_block(context, shape, x),
+        NodeAttribute::Attribute(x) => {
             let name = rewrite_node_name(&x.keyed_attribute.key);
 
             if let Some(x) = &x.value {
@@ -427,34 +399,3 @@ fn is_void_element(name: &str, has_children: bool) -> bool {
         )
     }
 }
-
-// pub fn node(&mut self, node: &Node) {
-//     self.flush_comments(node.span().start().line - 1);
-//
-//     match node {
-//         Node::Element(ele) => self.element(ele),
-//         Node::Fragment(frag) => self.fragment(frag),
-//         Node::Text(text) => self.node_text(text),
-//         Node::RawText(text) => self.raw_text(text, true),
-//         Node::Comment(comment) => self.comment(comment),
-//         Node::Doctype(doctype) => self.doctype(doctype),
-//         Node::Block(block) => self.node_block(block),
-//     };
-// }
-
-// pub fn node_text(&mut self, text: &NodeText) {
-//     self.literal_str(&text.value);
-// }
-
-// pub fn node_block(
-//     context: &RewriteContext<'_>,
-//     shape: Shape,
-//     ts: &TokenStream,
-//     offset: (usize, usize),
-//     block: &NodeBlock
-// ) {
-//     match block {
-//         NodeBlock::Invalid { .. } => panic!("Invalid block will not pass cargo check"), // but we can keep them instead of panic
-//         NodeBlock::ValidBlock(b) => self.node_value_block_expr(b, false, false),
-//     }
-// }
