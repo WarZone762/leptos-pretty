@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use proc_macro2 as pm;
 use rstml::{atoms, node};
 use rustc_ast::tokenstream::TokenStream;

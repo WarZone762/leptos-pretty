@@ -1,5 +1,5 @@
 use crate::{
-    comment::{combine_strs_with_missing_comments, rewrite_missing_comment},
+    comment::combine_strs_with_missing_comments,
     leptos::convert::{Node, NodeAttribute, Span},
     rewrite::{Rewrite, RewriteContext},
     shape::Shape,
