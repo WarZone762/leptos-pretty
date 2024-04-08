@@ -15,7 +15,7 @@ rustup toolchain install nightly-2023-12-28 --profile minimal --component llvm-t
 Then simply:
 
 ```sh
-cargo +nightly-2023-12-28 install --git https://github.com/WarZone762/leptos-pretty leptos-pretty
+cargo +nightly-2023-12-28 install leptos-pretty
 ```
 
 When runnig `leptos-pretty`, the required toolchain will be selected automatically, provided it is
